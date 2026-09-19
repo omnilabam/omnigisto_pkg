@@ -1,6 +1,15 @@
 # omnigisto_pkg
 
-A lightweight, fast, and memory-efficient Dart & Flutter library for reading Aperio SVS (Whole Slide Image / WSI) files. It enables positional metadata parsing, pyramid resolution level inspection, on-demand tile extraction, and associated image retrieval (thumbnail, label, macro) without loading multi-gigabyte files into RAM.
+<img src="omnigisto.svg" width="200" alt="OmniGisto logo">
+
+[![Pub Version](https://img.shields.io/pub/v/omnigisto_pkg.svg)](https://pub.dev/packages/omnigisto_pkg)
+[![Pub Likes](https://img.shields.io/pub/likes/omnigisto_pkg.svg)](https://pub.dev/packages/omnigisto_pkg)
+[![License](https://img.shields.io/badge/License-BSD_3--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
+
+[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-Donate-yellow.svg?logo=buy-me-a-coffee)](https://www.buymeacoffee.com/omnigisto)
+
+
+A lightweight, fast, and memory-efficient Dart & Flutter library for reading Aperio SVS and Hamamatsu NDPI/VMS/VMU (Whole Slide Image / WSI) files. It enables positional metadata parsing, pyramid resolution level inspection, on-demand tile extraction, and associated image retrieval (thumbnail, label, macro) without loading multi-gigabyte files into RAM.
 
 ---
 
@@ -14,6 +23,8 @@ A lightweight, fast, and memory-efficient Dart & Flutter library for reading Ape
 - **On-Demand Tile Extraction**: Extract specific image tiles by level and tile grid coordinates (`tileX`, `tileY`) in different formats.
 - **Associated Images**: Extract non-tiled associated images such as `thumbnail`, `label` (slide barcode/label), and `macro` (full slide preview) in different formats.
 - **Aperio Metadata Parser**: Automatically parses Aperio header properties, compression quality (`Q`), microns-per-pixel (`MPP`), `DisplayColor`, scan dimensions, and custom key-value pairs.
+- **Hamamatsu Support**: Reads NDPI extended 64-bit offsets, VMS JPEG mosaics, and VMU/NGR 12-bit RGB data through the same API and result classes; no native OpenSlide dependency is required.
+- **Virtual Tiling & Region Decoding**: Automatically aggregates 8-pixel micro-tiles in Hamamatsu NDPI into standard tiles (e.g., 256x256 or 512x512) for smooth, lag-free UI rendering. Provides OpenSlide-compatible arbitrary rectangular region decoding (`readRegion(x, y, w, h)`).
 - **Cross-Platform**: Works across all platforms supported by Dart `dart:io` (Flutter for Android, iOS, macOS, Windows, Linux).
 
 ---
@@ -309,18 +320,90 @@ if (tileBytes != null) {
 
 ---
 
+## Hamamatsu NDPI, VMS and VMU
+
+Use the existing functions without renaming or converting the returned data:
+
+```dart
+final slide = await openSvsFile('/slides/sample.ndpi');
+// Also accepts /slides/sample.vms or /slides/sample.vmu.
+if (slide != null) {
+  try {
+    final SvsMetadata? metadata = await readSvsMetadata(slide);
+    final SvsFullMetadata? full = await readFullSvsMetadata(slide);
+    final tile = await extractSvsTileAsImage(slide, 0, 0, 0);
+    print(metadata);
+    print(full);
+    print(tile?.width);
+  } finally {
+    await slide.close();
+  }
+}
+```
+
+`SvsMetadata`, `SvsFullMetadata`, `SvsImageInfo`, their fields and `toString()` formats are unchanged. `levels` remain sorted from largest to smallest, with `downsample` relative to level 0. Properties remain `Map<String, String>`; Hamamatsu adds `Vendor=Hamamatsu`, `Compression`, `AppMag` and `MPP`/`MPP_X`/`MPP_Y` when available. Invalid coordinates, missing associations and cancelled tile requests still return `null`.
+
+- **NDPI**: Detected by its contents, not its extension. Handles eight-byte header/IFD pointers and the NDPI IFD value-extension table, including files larger than 4 GiB. JPEG strips become native restart-interval tiles; unreliable or absent restart tables fall back to incremental marker scanning. Only focal plane 0 is exposed. Positive `SourceLens` values are pyramid levels; `SourceLens=-1` is `macro`. Other auxiliary directories are not exposed.
+- **VMS**: Open the INI index and retain its referenced JPEG files and `MapFile` in their relative locations. `ImageFile`, `ImageFile(x,y)`, `ImageFile(z)` and `ImageFile(z,x,y)` are supported for plane 0. The JPEG mosaic is the baseline, the map is a reduced level and `thumbnail`, and optional `MacroImage` is `macro`. File boundaries must align with the native tile grid; incompatible mosaics are rejected rather than resampled. `.opt` is not required or used; missing restart offsets are discovered incrementally.
+- **VMU**: Open the INI index together with its NGR `ImageFile`/`MapFile` and optional JPEG `MacroImage`. Supports `BitsPerPixel=36`, `PixelOrder=RGB`, and the `GN` NGR header. The 12-bit RGB samples stored in little-endian 16-bit words are normalized to 8-bit RGB. Tiles use the NGR column width and 64 rows, with the last row cropped; image width must be divisible by column width.
+
+Always use the reported `tileWidth`/`tileHeight`: Hamamatsu JPEG tiles can be wide and only 8 or 16 pixels high. To eliminate UI rendering bottlenecks caused by tiny 8-pixel strips, **Virtual Tiling** automatically aggregates vertical intervals (e.g. 32 or 64 MCU rows, producing 256x256 or 512x512 tiles). You can also configure or toggle virtual tiling via `openSvsFile` options or `enableVirtualTiling(slide)` / `disableVirtualTiling(slide)`:
+
+```dart
+// Open with customized virtual tile dimensions
+final slide = await openSvsFile(
+  '/slides/sample.ndpi',
+  virtualTiling: true,
+  mcuRowsPerTile: 32, // 32 MCU rows = 256 px high
+  virtualTileWidth: 256,
+  virtualTileHeight: 256,
+);
+
+// Or decode arbitrary rectangular regions (like OpenSlide readRegion):
+final img.Image? region = await readRegion(
+  slide,
+  0, // layerIndex
+  100, // x
+  200, // y
+  512, // width
+  512, // height
+);
+```
+
+`extractSvsTile` returns standalone JPEG bytes for NDPI/VMS (headers adjusted without recompressing entropy), or row-major 8-bit RGB bytes for VMU. `extractSvsTileAsImage` consistently returns `img.Image`. Associated-image functions keep their existing raw/image/JPEG return types; associations not present in the source, such as a separate label, are not fabricated. Explicit `displayColor` overrides and `applyDisplayColor` remain available.
+
+JPEG support covers sequential 8-bit, single-scan images with one or three components. Progressive, arithmetic, multiscan JPEGs and incompatible restart layouts are rejected. A JPEG without restart markers is a single tile and must fit the whole-image limit (16 Mi pixels); full associated-image decoding has the same pixel limit. Large restart-coded levels are read on demand. `maxConcurrency` applies to each underlying file pool; `close()` closes all sidecar sources as well.
+
+Regression fixtures are generated locally, including sparse NDPI offsets above 4 GiB, JPEG restart markers, VMS mosaics and NGR columns. Real-file validation also used the public [CMU-1.ndpi sample](https://openslide.cs.cmu.edu/download/openslide-testdata/Hamamatsu/CMU-1.ndpi); VMU validation uses synthetic fixtures. Format reference: [OpenSlide Hamamatsu documentation](https://openslide.org/formats/hamamatsu/).
+
+Run the self-contained Hamamatsu tests (no downloads required):
+
+```bash
+flutter test test/hamamatsu_ndpi_test.dart test/hamamatsu_vms_test.dart test/hamamatsu_jpeg_test.dart test/virtual_tiling_and_region_test.dart
+```
+
+The existing SVS integration tests additionally require their original slide fixtures under `example/assets/`; these large files are not included in the package.
+
+---
+
 ## API Reference
 
 ### Functions
 
 | Function | Description |
 | :--- | :--- |
-| `Future<SvsFile?> openSvsFile(String path)` | Opens an SVS/BigTIFF file and parses the TIFF header. |
+| `Future<SvsFile?> openSvsFile(String path, {int maxConcurrency = 4, bool? virtualTiling, int? virtualTileWidth, int? virtualTileHeight, int? mcuRowsPerTile})` | Opens SVS/TIFF/BigTIFF, Hamamatsu NDPI, or a VMS/VMU index with optional virtual tiling. |
 | `Future<SvsMetadata?> readSvsMetadata(SvsFile svs)` | Reads basic metadata of the primary image (including `displayColor`). |
 | `Future<SvsFullMetadata?> readFullSvsMetadata(SvsFile svs)` | Reads all pyramid levels and associated image metadata. |
+| `Future<img.Image?> readRegion(SvsFile svs, int layerIndex, int x, int y, int width, int height, {bool applyColorScheme = true, bool applyDisplayColor = true, int? displayColor, CancellationToken? cancelToken})` | OpenSlide-compatible arbitrary rectangle region decoding across SVS and Hamamatsu slides. |
+| `Future<img.Image?> extractSvsRegionAsImage(SvsFile svs, int layerIndex, int x, int y, int width, int height, ...)` | Alias for `readRegion`. |
+| `Future<Uint8List?> extractSvsRegion(SvsFile svs, int layerIndex, int x, int y, int width, int height, ...)` | Extracts a rectangular region as encoded JPEG bytes. |
+| `void enableVirtualTiling(SvsFile svs, {int? virtualTileWidth, int? virtualTileHeight, int? mcuRowsPerTile})` | Enables virtual tiling on an open Hamamatsu slide. |
+| `void disableVirtualTiling(SvsFile svs)` | Disables virtual tiling, reverting to raw micro-tiles. |
 | `Future<img.Image?> extractSvsImageAsImage(SvsFile svs, String type, {bool applyColorScheme = true, bool applyDisplayColor = true, int? displayColor})` | Extracts decoded `img.Image` for `'thumbnail'`, `'label'`, or `'macro'`. |
 | `Future<Uint8List?> extractSvsImageAsJpeg(SvsFile svs, String type, {int quality = 90, bool applyColorScheme = true, bool applyDisplayColor = true, int? displayColor})` | Extracts JPEG encoded byte data for `'thumbnail'`, `'label'`, or `'macro'`. |
 | `Future<Uint8List?> extractSvsImage(SvsFile svs, String type)` | Extracts raw bytes for `'thumbnail'`, `'label'`, or `'macro'`. |
+| `Future<Uint8List?> extractSvsLevelImage(SvsFile svs, int layerIndex, {CancellationToken? cancelToken})` | Extracts raw whole-image bytes for a resolution layer. |
 | `Future<img.Image?> extractSvsTileAsImage(SvsFile svs, int layerIndex, int tileX, int tileY, {bool applyColorScheme = true, bool applyDisplayColor = true, int? displayColor, CancellationToken? cancelToken})` | Extracts and decodes `img.Image` for a specific tile. |
 | `Future<Uint8List?> extractSvsTile(SvsFile svs, int layerIndex, int tileX, int tileY, {CancellationToken? cancelToken})` | Extracts raw bytes for a specific tile. |
 | `int? parseDisplayColor(dynamic value)` | Utility function to parse Aperio `DisplayColor` strings (decimal, hex, `#RRGGBB`, `0xRRGGBB`) or integers into an integer RGB value. |

@@ -46,3 +46,17 @@
 * Added `cancelToken` support to `SvsFile` descriptor pool (`_acquireHandle` and `readBytesAt`) with automatic waiter removal and zero descriptor leaks upon cancellation.
 * Added `cancelToken` parameter to `extractSvsTile` and `extractSvsTileAsImage` with cancellation checks before heavy operations (I/O, LZW, JPEG 2000 decompressions, ICC and color map processing).
 
+## 0.1.5
+* Added Hamamatsu NDPI, VMS and VMU support through the existing SVS API, preserving metadata models, field types and string output formats.
+* Added NDPI extended 64-bit IFD/strip offsets, focal-plane filtering, objective/MPP properties and macro image extraction.
+* Added on-demand JPEG restart-interval extraction without recompression, with cancellation and fallback scanning for missing or unreliable NDPI indexes.
+* Added Virtual Tiling (micro-tile aggregation) for Hamamatsu NDPI: aggregates vertical MCU intervals (e.g. 32 or 64 MCU rows, 256x256 or 512x512) to eliminate UI rendering lag caused by 8-pixel micro-tiles.
+* Added OpenSlide-compatible arbitrary region decoding: `readRegion(svs, layerIndex, x, y, width, height)` and `extractSvsRegion` / `extractSvsRegionAsImage` across both SVS and Hamamatsu formats.
+* Added `enableVirtualTiling` and `disableVirtualTiling` functions and configuration parameters in `openSvsFile` (`virtualTiling`, `virtualTileWidth`, `virtualTileHeight`, `mcuRowsPerTile`).
+* Added VMS JPEG mosaics and VMU/NGR column reads with 12-bit to 8-bit RGB conversion, map thumbnails and optional macro images.
+> [!NOTE]
+> Comprehensive compatibility tests have been conducted for all three formats.
+> The evaluation successfully covers scenarios featuring sparse offsets above 4 GiB,
+> malformed data handling, as well as concurrent reads and cancellation.
+> NDPI correctness has been additionally validated against public samples.
+

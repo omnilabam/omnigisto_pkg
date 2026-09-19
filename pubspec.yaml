@@ -1,27 +1,23 @@
 name: omnigisto_pkg
-description: "A lightweight, fast, and memory-efficient Flutter/Dart library for reading Aperio SVS histological image metadata, extracting tiles, and associated images."
-version: 0.1.4
-homepage: https://github.com/vvsaradjev/omnigisto_pkg
-repository: https://github.com/vvsaradjev/omnigisto_pkg
-issue_tracker: https://github.com/vvsaradjev/omnigisto_pkg/issues
+description: "A lightweight Flutter/Dart library for reading Aperio SVS and Hamamatsu NDPI/VMS/VMU metadata, extracting tiles and associated images."
+version: 0.1.5
+homepage: https://github.com/omnilabam/omnigisto_pkg
+repository: https://github.com/omnilabam/omnigisto_pkg
+issue_tracker: https://github.com/omnilabam/omnigisto_pkg/issues
+topics:
+  - image-processing-dart
+  - medical-imaging
+  - microscopy
+  - pathology
+  - wsi
 
 
 environment:
-  sdk: ^3.11.5
-  flutter: ">=1.17.0"
+  sdk: ^3.3.0
 
 dependencies:
-  flutter:
-    sdk: flutter
   image: ^4.9.2
   jpeg2000: ^0.1.4
 
-dev_dependencies:
-  flutter_test:
-    sdk: flutter
-  flutter_lints: ^6.0.0
-
-
-flutter:
 
 

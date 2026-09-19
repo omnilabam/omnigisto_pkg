@@ -29,4 +29,8 @@ migrate_working_dir/
 .flutter-plugins-dependencies
 /build/
 /coverage/
-/test/
+/test/*
+!/test/hamamatsu_*_test.dart
+!/test/helpers/
+/test/helpers/*
+!/test/helpers/hamamatsu_jpeg_fixture.dart

@@ -77,9 +77,8 @@ class _TestScreenState extends State<TestScreen> {
   Future<void> _runTest() async {
 
     try {
-      // 1. Coping from assets to gadgets file system
-      // There's no need's  to do it in real scenario, I'm do it in test, because  using assets/  folder
-      // add your file
+
+
       String realPath = 'assets/1.2.276.0.7230010.3.1.4.826242871.3100.1534335055.4381.svs';
 
       final byteData = await rootBundle.load(realPath);
@@ -97,7 +96,6 @@ class _TestScreenState extends State<TestScreen> {
 
       _log("File saved: ${file.path}");
 
-      // 2. Запускаем ваш код из пакета
       final svs = await openSvsFile(file.path);
       if (svs == null) {
         _log("Error opening SVS file");
@@ -152,7 +150,6 @@ class _TestScreenState extends State<TestScreen> {
           }
 
 
-          // async upload
           List<img.Image?> tiles = await Future.wait(
             List.generate(20, (i) => extractSvsTileAsImage(svs, 0, i, 0)),
           );

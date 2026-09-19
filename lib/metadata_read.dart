@@ -4,20 +4,35 @@
 // All rights reserved.
 
 import 'dart:io';
+import 'dart:math' as math;
 import 'dart:typed_data';
 import 'package:image/image.dart' as img;
 import 'package:jpeg2000/jpeg2000.dart';
 import 'package:omnigisto_pkg/types/types.dart';
 
-/// Opens an SVS file at the specified [path] and reads its TIFF/BigTIFF header.
+import 'src/hamamatsu/ndpi.dart';
+import 'src/hamamatsu/slide.dart';
+import 'src/hamamatsu/vms.dart';
+
+/// Opens an SVS, Hamamatsu NDPI, VMS or VMU file at the specified [path].
 ///
 /// Supports both standard TIFF (Magic 42) and BigTIFF (Magic 43, 64-bit offsets).
 /// [maxConcurrency] defines the maximum number of concurrent file handles in the pool
 /// used for parallel tile reading (default is 4). For slow mechanical HDDs or resource-constrained
 /// environments, set to 1 or 2 to avoid seek thrashing. For fast SSDs/NVMe, higher values
 /// (e.g. 4 to 8) maximize read throughput.
-/// Returns an [SvsFile] instance if the file is a valid SVS/TIFF file, or `null` if opening or validation fails.
-Future<SvsFile?> openSvsFile(String path, {int maxConcurrency = 4}) async {
+/// [virtualTiling] controls whether to aggregate micro-tiles in Hamamatsu slides.
+/// [virtualTileWidth] and [virtualTileHeight] configure virtual tile dimensions (e.g. 256x256 or 512x512).
+/// [mcuRowsPerTile] configures the number of MCU rows per virtual tile (e.g. 32 or 64).
+/// Returns an [SvsFile] instance if the file is valid, or `null` if opening or validation fails.
+Future<SvsFile?> openSvsFile(
+  String path, {
+  int maxConcurrency = 4,
+  bool? virtualTiling,
+  int? virtualTileWidth,
+  int? virtualTileHeight,
+  int? mcuRowsPerTile,
+}) async {
   final file = File(path);
   if (!await file.exists()) return null;
 
@@ -37,14 +52,46 @@ Future<SvsFile?> openSvsFile(String path, {int maxConcurrency = 4}) async {
     } else if (byteOrder == 'MM') {
       endian = Endian.big;
     } else {
-      await raf.close();
-      return null;
+      return await openHamamatsuSet(
+        raf,
+        path,
+        maxConcurrency,
+        virtualTiling: virtualTiling,
+        virtualTileWidth: virtualTileWidth,
+        virtualTileHeight: virtualTileHeight,
+        mcuRowsPerTile: mcuRowsPerTile,
+      );
     }
 
     final magic = bd.getUint16(2, endian);
     if (magic == 42) {
       // Standard TIFF (32-bit offsets)
       final ifdOffset = bd.getUint32(4, endian);
+      final ndpiOffset = headerBytes.length >= 12 ? bd.getUint64(4, endian) : 0;
+      if (await isNdpi(raf, ndpiOffset, endian)) {
+        return await openNdpi(
+          raf,
+          path,
+          endian,
+          ndpiOffset,
+          maxConcurrency,
+          virtualTiling: virtualTiling,
+          virtualTileWidth: virtualTileWidth,
+          virtualTileHeight: virtualTileHeight,
+          mcuRowsPerTile: mcuRowsPerTile,
+        );
+      }
+      if (ifdOffset != 0) {
+        final length = await raf.length();
+        if (ifdOffset > length - 2) throw const FormatException('Invalid TIFF IFD offset');
+        await raf.setPosition(ifdOffset);
+        final countBytes = await raf.read(2);
+        if (countBytes.length != 2) throw const FormatException('Truncated TIFF IFD');
+        final count = ByteData.sublistView(countBytes).getUint16(0, endian);
+        if (ifdOffset + 2 + count * 12 + 4 > length) {
+          throw const FormatException('Truncated TIFF directory');
+        }
+      }
       return SvsFile(raf, endian, ifdOffset, false, path, maxConcurrency);
     } else if (magic == 43) {
       // BigTIFF (64-bit offsets)
@@ -76,6 +123,14 @@ Future<SvsFile?> openSvsFile(String path, {int maxConcurrency = 4}) async {
 /// [type] is the image type identifier to extract ('thumbnail', 'label', or 'macro').
 /// Returns the raw byte data, or `null` if the requested image type was not found.
 Future<Uint8List?> extractSvsImage(SvsFile svs, String type) async {
+  if (svs is HamamatsuFile) {
+    svs.ensureOpen();
+    try {
+      return await svs.associations[type]?.readImage();
+    } catch (_) {
+      return null;
+    }
+  }
   return await svs.synchronized(() async {
     final raf = svs.raf;
     final endian = svs.endian;
@@ -160,6 +215,20 @@ Future<img.Image?> extractSvsImageAsImage(
   bool applyDisplayColor = true,
   int? displayColor,
 }) async {
+  if (svs is HamamatsuFile) {
+    svs.ensureOpen();
+    try {
+      final image = await svs.associations[type]?.readImageDecoded(
+        applyColorScheme: applyColorScheme,
+      );
+      if (image != null && applyDisplayColor && displayColor != null && displayColor != 0) {
+        return _applyDisplayColorToImage(image, displayColor);
+      }
+      return image;
+    } catch (_) {
+      return null;
+    }
+  }
   return await svs.synchronized(() async {
     final raf = svs.raf;
     final endian = svs.endian;
@@ -804,6 +873,16 @@ Future<Uint8List?> extractSvsTile(
     return null;
   }
 
+  if (svs is HamamatsuFile) {
+    final level = svs.levelAt(layerIndex, tileX, tileY);
+    try {
+      final bytes = await level?.readTile(tileX, tileY, cancelToken: cancelToken);
+      return cancelToken?.isCancelled == true ? null : bytes;
+    } catch (_) {
+      return null;
+    }
+  }
+
   final collected = await _getOrCollectTiledLevels(svs);
   if (cancelToken?.isCancelled == true) {
     return null;
@@ -873,6 +952,21 @@ Future<img.Image?> extractSvsTileAsImage(
 }) async {
   if (cancelToken?.isCancelled == true) {
     return null;
+  }
+
+  if (svs is HamamatsuFile) {
+    final level = svs.levelAt(layerIndex, tileX, tileY);
+    try {
+      final image = await level?.readTileImage(tileX, tileY,
+          applyColorScheme: applyColorScheme, cancelToken: cancelToken);
+      if (cancelToken?.isCancelled == true) return null;
+      if (image != null && applyDisplayColor && displayColor != null && displayColor != 0) {
+        return _applyDisplayColorToImage(image, displayColor);
+      }
+      return image;
+    } catch (_) {
+      return null;
+    }
   }
 
   final collected = await _getOrCollectTiledLevels(svs);
@@ -961,6 +1055,246 @@ Future<img.Image?> extractSvsTileAsImage(
     colorMap: fullData.colorMap,
     cancelToken: cancelToken,
   );
+}
+
+/// Extracts the raw image bytes of a specific resolution layer from the slide.
+///
+/// [svs] is the open [SvsFile].
+/// [layerIndex] is the resolution layer index (0 is baseline).
+/// [cancelToken] optional cancellation token.
+/// Returns the raw image bytes, or `null` if the layer is invalid or unavailable.
+Future<Uint8List?> extractSvsLevelImage(
+  SvsFile svs,
+  int layerIndex, {
+  CancellationToken? cancelToken,
+}) async {
+  if (cancelToken?.isCancelled == true) return null;
+  if (svs is HamamatsuFile) {
+    svs.ensureOpen();
+    if (layerIndex < 0 || layerIndex >= svs.levels.length) return null;
+    try {
+      final bytes = await svs.levels[layerIndex].readImage();
+      return cancelToken?.isCancelled == true ? null : bytes;
+    } catch (_) {
+      return null;
+    }
+  }
+  return null;
+}
+
+/// Enables virtual tiling for Hamamatsu slides, aggregating micro-tiles into larger tiles.
+void enableVirtualTiling(
+  SvsFile svs, {
+  int? virtualTileWidth,
+  int? virtualTileHeight,
+  int? mcuRowsPerTile,
+}) {
+  if (svs is HamamatsuFile) {
+    svs.enableVirtualTiling(
+      virtualTileWidth: virtualTileWidth,
+      virtualTileHeight: virtualTileHeight,
+      mcuRowsPerTile: mcuRowsPerTile,
+    );
+  }
+}
+
+/// Disables virtual tiling for Hamamatsu slides, reverting to raw micro-tiles.
+void disableVirtualTiling(SvsFile svs) {
+  if (svs is HamamatsuFile) {
+    svs.disableVirtualTiling();
+  }
+}
+
+/// Reads an arbitrary rectangular region from a resolution layer in the slide.
+///
+/// Supports OpenSlide-style region reading (`readRegion(x, y, w, h)`) across both
+/// Aperio SVS and Hamamatsu formats (NDPI, VMS, VMU).
+///
+/// [svs] is the open [SvsFile].
+/// [layerIndex] is the resolution layer index (0 is baseline / highest resolution).
+/// [x] and [y] are the pixel coordinates of the top-left corner in the layer.
+/// [width] and [height] are the dimensions of the region to extract in pixels.
+/// [applyColorScheme] if `true`, applies appropriate color space conversion.
+/// [applyDisplayColor] if `true`, applies display color tinting if present.
+/// [displayColor] optional explicit display color override.
+/// [cancelToken] optional cancellation token.
+///
+/// Returns the extracted [img.Image], or `null` if the region or layer is invalid or cancelled.
+Future<img.Image?> readRegion(
+  SvsFile svs,
+  int layerIndex,
+  int x,
+  int y,
+  int width,
+  int height, {
+  bool applyColorScheme = true,
+  bool applyDisplayColor = true,
+  int? displayColor,
+  CancellationToken? cancelToken,
+}) async {
+  if (width <= 0 || height <= 0 || cancelToken?.isCancelled == true) {
+    return null;
+  }
+
+  if (svs is HamamatsuFile) {
+    svs.ensureOpen();
+    if (layerIndex < 0 || layerIndex >= svs.levels.length) return null;
+    try {
+      final image = await svs.levels[layerIndex].readRegion(
+        x,
+        y,
+        width,
+        height,
+        applyColorScheme: applyColorScheme,
+        cancelToken: cancelToken,
+      );
+      if (cancelToken?.isCancelled == true) return null;
+      if (image != null && applyDisplayColor && displayColor != null && displayColor != 0) {
+        return _applyDisplayColorToImage(image, displayColor);
+      }
+      return image;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  final collected = await _getOrCollectTiledLevels(svs);
+  if (cancelToken?.isCancelled == true) return null;
+  final levels = collected.levels;
+  if (layerIndex < 0 || layerIndex >= levels.length) return null;
+
+  final targetLevel = levels[layerIndex];
+  final fullData = await _getOrLoadLevelFullData(
+    svs,
+    targetLevel,
+    collected.globalJpegTables,
+    collected.globalDisplayColor,
+  );
+  if (fullData == null || cancelToken?.isCancelled == true) return null;
+
+  final effectiveDisplayColor = displayColor ?? fullData.displayColor;
+
+  final output = img.Image(width: width, height: height);
+  output.clear(img.ColorRgb8(255, 255, 255));
+
+  final clipX0 = math.max(0, x);
+  final clipY0 = math.max(0, y);
+  final clipX1 = math.min(targetLevel.width, x + width);
+  final clipY1 = math.min(targetLevel.height, y + height);
+
+  if (clipX0 >= clipX1 || clipY0 >= clipY1) {
+    if (applyDisplayColor && effectiveDisplayColor != null && effectiveDisplayColor != 0) {
+      return _applyDisplayColorToImage(output, effectiveDisplayColor);
+    }
+    return output;
+  }
+
+  final startTileX = clipX0 ~/ targetLevel.tileWidth;
+  final endTileX = (clipX1 - 1) ~/ targetLevel.tileWidth;
+  final startTileY = clipY0 ~/ targetLevel.tileHeight;
+  final endTileY = (clipY1 - 1) ~/ targetLevel.tileHeight;
+
+  for (var ty = startTileY; ty <= endTileY; ty++) {
+    for (var tx = startTileX; tx <= endTileX; tx++) {
+      if (cancelToken?.isCancelled == true) return null;
+      final tileImg = await extractSvsTileAsImage(
+        svs,
+        layerIndex,
+        tx,
+        ty,
+        applyColorScheme: applyColorScheme,
+        applyDisplayColor: false,
+        cancelToken: cancelToken,
+      );
+      if (tileImg == null) continue;
+      if (cancelToken?.isCancelled == true) return null;
+
+      final tileLeft = tx * targetLevel.tileWidth;
+      final tileTop = ty * targetLevel.tileHeight;
+
+      final srcX = math.max(0, x - tileLeft);
+      final srcY = math.max(0, y - tileTop);
+      final dstX = math.max(0, tileLeft - x);
+      final dstY = math.max(0, tileTop - y);
+      final copyW = math.min(tileImg.width - srcX, width - dstX);
+      final copyH = math.min(tileImg.height - srcY, height - dstY);
+
+      if (copyW > 0 && copyH > 0) {
+        img.compositeImage(
+          output,
+          tileImg,
+          srcX: srcX,
+          srcY: srcY,
+          srcW: copyW,
+          srcH: copyH,
+          dstX: dstX,
+          dstY: dstY,
+        );
+      }
+    }
+  }
+
+  if (applyDisplayColor && effectiveDisplayColor != null && effectiveDisplayColor != 0) {
+    return _applyDisplayColorToImage(output, effectiveDisplayColor);
+  }
+  return output;
+}
+
+/// Extracts a rectangular region as a decoded [img.Image].
+///
+/// Alias for [readRegion].
+Future<img.Image?> extractSvsRegionAsImage(
+  SvsFile svs,
+  int layerIndex,
+  int x,
+  int y,
+  int width,
+  int height, {
+  bool applyColorScheme = true,
+  bool applyDisplayColor = true,
+  int? displayColor,
+  CancellationToken? cancelToken,
+}) => readRegion(
+  svs,
+  layerIndex,
+  x,
+  y,
+  width,
+  height,
+  applyColorScheme: applyColorScheme,
+  applyDisplayColor: applyDisplayColor,
+  displayColor: displayColor,
+  cancelToken: cancelToken,
+);
+
+/// Extracts a rectangular region as encoded JPEG bytes.
+Future<Uint8List?> extractSvsRegion(
+  SvsFile svs,
+  int layerIndex,
+  int x,
+  int y,
+  int width,
+  int height, {
+  bool applyColorScheme = true,
+  bool applyDisplayColor = true,
+  int? displayColor,
+  CancellationToken? cancelToken,
+  int quality = 90,
+}) async {
+  final image = await readRegion(
+    svs,
+    layerIndex,
+    x,
+    y,
+    width,
+    height,
+    applyColorScheme: applyColorScheme,
+    applyDisplayColor: applyDisplayColor,
+    displayColor: displayColor,
+    cancelToken: cancelToken,
+  );
+  if (image == null || cancelToken?.isCancelled == true) return null;
+  return Uint8List.fromList(img.encodeJpg(image, quality: quality));
 }
 
 /// Internal helper for decoding tile bytes with given format settings.
@@ -1427,6 +1761,7 @@ Future<List<int>> _readTiffArray(
 /// [svs] is the open [SvsFile].
 /// Returns an [SvsFullMetadata] instance containing the levels and associated images, or `null` on failure.
 Future<SvsFullMetadata?> readFullSvsMetadata(SvsFile svs) async {
+  if (svs is HamamatsuFile) return svs.fullMetadata();
   return await svs.synchronized(() async {
     final raf = svs.raf;
     final endian = svs.endian;
@@ -1601,6 +1936,7 @@ Future<SvsFullMetadata?> readFullSvsMetadata(SvsFile svs) async {
 /// [svs] is the open [SvsFile].
 /// Returns an [SvsMetadata] instance, or `null` on failure.
 Future<SvsMetadata?> readSvsMetadata(SvsFile svs) async {
+  if (svs is HamamatsuFile) return svs.metadata();
   return await svs.synchronized(() async {
     final raf = svs.raf;
     final endian = svs.endian;
