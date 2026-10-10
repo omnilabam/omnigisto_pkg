@@ -5,6 +5,9 @@
 [![Pub Version](https://img.shields.io/pub/v/omnigisto_pkg.svg)](https://pub.dev/packages/omnigisto_pkg)
 [![Pub Likes](https://img.shields.io/pub/likes/omnigisto_pkg.svg)](https://pub.dev/packages/omnigisto_pkg)
 [![License](https://img.shields.io/badge/License-BSD_3--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
+[![Platform: Pure Dart](https://img.shields.io/badge/Platform-Pure%20Dart%20(No%20Flutter)-orange.svg)](https://dart.dev)
+
+[![Ecosystem: omni_wsi_anotations](https://img.shields.io/badge/Ecosystem-omnigisto__pkg-purple.svg)](https://pub.dev/packages/omni_wsi_anotations)
 
 [![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-Donate-yellow.svg?logo=buy-me-a-coffee)](https://www.buymeacoffee.com/omnigisto)
 

@@ -60,3 +60,23 @@
 > malformed data handling, as well as concurrent reads and cancellation.
 > NDPI correctness has been additionally validated against public samples.
 
+## 0.1.6
+* Exported new DICOM functions in the main library `package:omnigisto_pkg/omnigisto_pkg.dart`.
+* Faster Hamamatsu NDPI tile reads: restart-interval boundaries are taken from the offset table, RST markers are checked in memory, and the entropy range is read in one call instead of a byte-by-byte scan.
+* Tile and strip copies are a single read up to 8 MiB. Fallback scanning without an offset table still uses 64 KiB chunks so cancellation can stop between buffers.
+* NDPI restart tables (tags 65426 and 65432) are stored in typed integer lists (`Uint32List` / `Int64List`) instead of boxed `List<num>`, reducing allocation when opening large slides.
+* Wide MCU strips used by virtual tiles and region crops are decoded once and cached; neighbouring horizontal tiles are cropped from that band instead of decoding the full strip again.
+* JPEG payloads larger than 512 KiB are decoded in an isolate so tile and region decoding does not block the event loop.
+
+* Added support for reading single instances of DICOM Whole Slide Imaging (WSI).
+* Implemented `DicomFile` with `RandomAccessFile` pooling for efficient parallel reading without loading the entire file into memory.
+* Added `openDicomFile` for fast DICOM parsing and scanning Basic Offset Table for O(1) frame access.
+* Added `DicomMetadata` and `readDicomMetadata` to extract key tags (UIDs, Total Pixel Matrix sizes, Transfer Syntax) and classify instance types (`VOLUME`, `LABEL`, `OVERVIEW`, `THUMBNAIL`).
+* Added `extractDicomFrame` for extracting raw frame bytes from encapsulated and uncompressed DICOM pixel data.
+* Added `extractDicomFrameAsImage` for decoding JPEG-compressed and uncompressed 8-bit DICOM frames.
+ß
+> [!NOTE]
+>The DICOM standard assumes that different layers, associated images, and annotations are located in different DICOM files that nevertheless belong to the same study. 
+>At the same time, this package was conceived as a lightweight package, and full DICOM implementation would require abandoning this idea. Thus, the package can read DICOM files of layers and associated images; for annotations, we created a separate package omni_wsi_annotations. 
+>
+>For full-fledged work with DICOM, you will need to create a wrapper over these two packages or wait for us to release our own.
