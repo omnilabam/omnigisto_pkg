@@ -1,6 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
   <defs>
-    <!-- Градиенты Liquid Glass -->
     <linearGradient id="folderGrad" x1="0%" y1="0%" x2="0%" y2="100%">
       <stop offset="0%" stop-color="#ffffff" stop-opacity="0.75"/>
       <stop offset="50%" stop-color="#e8f4ff" stop-opacity="0.45"/>
@@ -13,28 +12,24 @@
       <stop offset="100%" stop-color="#a8d0e8" stop-opacity="0.45"/>
     </linearGradient>
 
-    <!-- Матовое маркировочное поле предметного стекла (Frosted Label) -->
     <linearGradient id="frostedLabelGrad" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#ffffff" stop-opacity="0.98"/>
       <stop offset="60%" stop-color="#f8fafc" stop-opacity="0.92"/>
       <stop offset="100%" stop-color="#e2e8f0" stop-opacity="0.88"/>
     </linearGradient>
 
-    <!-- Покровное стекло (Coverslip) -->
     <linearGradient id="coverslipGrad" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#ffffff" stop-opacity="0.22"/>
       <stop offset="45%" stop-color="#ffffff" stop-opacity="0.05"/>
       <stop offset="100%" stop-color="#93c5fd" stop-opacity="0.12"/>
     </linearGradient>
 
-    <!-- Среда заключения препарата (Mounting Medium Halo) -->
     <linearGradient id="mountingHalo" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#f472b6" stop-opacity="0.16"/>
       <stop offset="60%" stop-color="#fda4af" stop-opacity="0.08"/>
       <stop offset="100%" stop-color="#cbd5e1" stop-opacity="0.02"/>
     </linearGradient>
 
-    <!-- Гистологический срез: Эозинофильная строма (Eosin Matrix) -->
     <linearGradient id="tissueEosinGrad" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#fb7185"/>
       <stop offset="30%" stop-color="#f43f5e"/>
@@ -42,7 +37,6 @@
       <stop offset="100%" stop-color="#be123c"/>
     </linearGradient>
 
-    <!-- Базофильный эпителиальный и клеточный слой (Hematoxylin) -->
     <linearGradient id="tissueHematoxylinGrad" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#9333ea"/>
       <stop offset="35%" stop-color="#7e22ce"/>
@@ -50,28 +44,24 @@
       <stop offset="100%" stop-color="#3b0764"/>
     </linearGradient>
 
-    <!-- Глубокая строма и паренхима -->
     <linearGradient id="tissueDeepGrad" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#be185d"/>
       <stop offset="50%" stop-color="#9d174d"/>
       <stop offset="100%" stop-color="#701a75"/>
     </linearGradient>
 
-    <!-- Светлый цитоплазматический слой -->
     <linearGradient id="tissueRoseGrad" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#fbcfe8"/>
       <stop offset="50%" stop-color="#f472b6"/>
       <stop offset="100%" stop-color="#db2777"/>
     </linearGradient>
 
-    <!-- Просветы желез (Lumen Interior) -->
     <linearGradient id="lumenGrad" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#ffffff"/>
       <stop offset="70%" stop-color="#fff1f2"/>
       <stop offset="100%" stop-color="#fce7f3"/>
     </linearGradient>
 
-    <!-- Лимфоидный герминативный центр (Germinal Center) -->
     <radialGradient id="germinalCenterGrad" cx="45%" cy="45%" r="60%">
       <stop offset="0%" stop-color="#f472b6"/>
       <stop offset="55%" stop-color="#c084fc"/>
@@ -102,7 +92,6 @@
     </filter>
   </defs>
 
-  <!-- Папка (задняя часть) -->
   <path d="M95 265
            C95 248, 108 235, 125 235
            L195 235
@@ -118,7 +107,6 @@
         stroke="#ffffff" stroke-opacity="0.55" stroke-width="2.5"
         filter="url(#softShadow)"/>
 
-  <!-- Папка (передняя часть) -->
   <path d="M95 295
            C95 278, 108 265, 125 265
            L375 265
@@ -130,7 +118,6 @@
         fill="url(#folderGrad)"
         stroke="#ffffff" stroke-opacity="0.45" stroke-width="2"/>
 
-  <!-- Блик на папке -->
   <path d="M110 275
            C110 268, 118 262, 128 262
            L370 262
@@ -141,22 +128,17 @@
            C118 300, 110 305, 110 310 Z"
         fill="url(#highlight)" opacity="0.35"/>
 
-  <!-- Слайд (стекло) с детальным макропрепаратом -->
   <g transform="rotate(-26 280 290)" filter="url(#glassGlow)">
-    <!-- Основное тело предметного стекла (75x25 мм стекло в масштабе) -->
     <rect x="195" y="145" width="155" height="300" rx="16" ry="16"
           fill="url(#slideGrad)"
           stroke="#ffffff" stroke-opacity="0.85" stroke-width="3.5"/>
 
-    <!-- Внутренний продольный блик предметного стекла -->
     <rect x="203" y="153" width="38" height="284" rx="10" ry="10"
           fill="url(#highlight)" opacity="0.45"/>
 
-    <!-- Тонкая фаска кромки стекла -->
     <rect x="199" y="149" width="147" height="292" rx="13" ry="13"
           fill="none" stroke="#ffffff" stroke-opacity="0.5" stroke-width="1.5"/>
 
-    <!-- Матовое поле маркировки (Frosted End / Label) -->
     <g id="slideLabel">
       <path d="M197 161
                C197 153.2 203.2 147 211 147
@@ -169,13 +151,10 @@
 
       <line x1="197" y1="198" x2="348" y2="198" stroke="#94a3b8" stroke-width="1.5"/>
 
-      <!-- 2D матричный штрихкод образца (DataMatrix) -->
       <g transform="translate(206, 154)" fill="#334155" opacity="0.85">
         <rect x="0" y="0" width="32" height="32" rx="3" fill="#ffffff" stroke="#94a3b8" stroke-width="0.8"/>
-        <!-- Угловой L-паттерн матрицы -->
         <rect x="3" y="3" width="2" height="26" fill="#1e293b"/>
         <rect x="3" y="27" width="26" height="2" fill="#1e293b"/>
-        <!-- Точки матрицы данных -->
         <rect x="8" y="6" width="3" height="3" rx="0.5"/>
         <rect x="14" y="6" width="3" height="3" rx="0.5"/>
         <rect x="23" y="6" width="3" height="3" rx="0.5"/>
@@ -189,11 +168,9 @@
         <rect x="14" y="24" width="3" height="3" rx="0.5"/>
       </g>
 
-      <!-- Текстовая и полосовая маркировка биоматериала -->
       <g transform="translate(245, 153)">
         <text x="0" y="10" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="9" font-weight="700" fill="#0f172a" letter-spacing="0.5">S-2408</text>
         <text x="50" y="10" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="8.5" font-weight="700" fill="#9333ea">H&amp;E</text>
-        <!-- Полосы каталожного номера / штрихкода -->
         <rect x="0" y="15" width="88" height="2.5" rx="1.2" fill="#475569" opacity="0.8"/>
         <rect x="0" y="20.5" width="62" height="2" rx="1" fill="#64748b" opacity="0.7"/>
         <rect x="0" y="25" width="80" height="2" rx="1" fill="#94a3b8" opacity="0.6"/>
@@ -201,20 +178,14 @@
       </g>
     </g>
 
-    <!-- Покровное стекло (Coverslip) над зоной препарата -->
     <rect x="201" y="204" width="143" height="230" rx="7" ry="7"
           fill="url(#coverslipGrad)"
           stroke="#ffffff" stroke-opacity="0.6" stroke-width="1.2"/>
-    <!-- Диагональный световой блик покровного стекла -->
     <path d="M207 210 L338 426" stroke="#ffffff" stroke-opacity="0.14" stroke-width="6" stroke-linecap="round"/>
     <path d="M203 216 L218 206" stroke="#ffffff" stroke-opacity="0.5" stroke-width="1" stroke-linecap="round"/>
 
-    <!-- ======================================================== -->
-    <!-- ДЕТАЛИЗИРОВАННЫЙ МАКРОПРЕПАРАТ (HISTOLOGICAL MACRO-SPECIMEN) -->
-    <!-- ======================================================== -->
     <g id="macroSpecimen">
 
-      <!-- Кайма заключительной среды (Mounting Medium Meniscus) -->
       <path d="M220 226
                C212 238, 208 260, 212 284
                C216 308, 212 328, 222 350
@@ -228,11 +199,7 @@
                C236 218, 226 218, 220 226 Z"
             fill="url(#mountingHalo)"/>
 
-      <!-- ====================================================== -->
-      <!-- 1. ОСНОВНОЙ ГИСТОЛОГИЧЕСКИЙ СРЕЗ ТКАНИ (PRIMARY SECTION) -->
-      <!-- ====================================================== -->
       <g id="primarySection">
-        <!-- Наружная капсула и краевой пласт ткани (эозинофильный матрикс) -->
         <path d="M232 235
                  C223 244, 217 262, 222 282
                  C226 298, 221 314, 224 330
@@ -247,7 +214,6 @@
               stroke="#9f1239" stroke-width="1.5" stroke-linejoin="round"
               filter="url(#softShadow)"/>
 
-        <!-- Внутренний базофильный клеточный слой (гематоксилин - высокая плотность ядер) -->
         <path d="M237 245
                  C231 254, 227 268, 230 285
                  C233 298, 229 312, 233 325
@@ -261,7 +227,6 @@
               fill="url(#tissueHematoxylinGrad)"
               opacity="0.94"/>
 
-        <!-- Подслизистый слой / стромальная зона (розовая цитоплазматическая зона) -->
         <path d="M245 254
                  C239 262, 238 274, 241 288
                  C244 300, 240 312, 245 322
@@ -275,7 +240,6 @@
               fill="url(#tissueRoseGrad)"
               opacity="0.88"/>
 
-        <!-- Центральная паренхиматозная / дольчатая зона -->
         <path d="M252 262
                  C248 270, 247 280, 250 292
                  C253 302, 250 311, 255 318
@@ -289,7 +253,6 @@
               fill="url(#tissueDeepGrad)"
               opacity="0.75"/>
 
-        <!-- Соединительнотканные септы и стромальные трабекулы (сеть волокон) -->
         <g stroke-linecap="round" fill="none">
           <path d="M232 280 C242 284, 256 278, 270 282 C284 286, 298 280, 320 284" stroke="#831843" stroke-width="1.6" opacity="0.6"/>
           <path d="M240 305 C252 301, 266 307, 280 303 C294 299, 306 305, 318 300" stroke="#831843" stroke-width="1.4" opacity="0.55"/>
@@ -299,74 +262,54 @@
           <path d="M272 315 C282 322, 295 318, 305 324" stroke="#be185d" stroke-width="1.1" opacity="0.6"/>
         </g>
 
-        <!-- Микроциркуляторное русло (артериолы и капиллярная сеть с эритроцитами) -->
         <g stroke-linecap="round" fill="none">
           <path d="M248 290 Q254 286 262 289 T274 287 T286 291" stroke="#e11d48" stroke-width="1.3" opacity="0.75"/>
           <path d="M262 289 Q265 296 268 304" stroke="#e11d48" stroke-width="1.1" opacity="0.7"/>
           <path d="M280 275 Q283 283 285 291" stroke="#e11d48" stroke-width="1.1" opacity="0.7"/>
-          <!-- Просветы мелких сосудов / венул -->
           <ellipse cx="254" cy="288" rx="2.2" ry="1.4" fill="#ffffff" stroke="#be123c" stroke-width="0.9"/>
           <ellipse cx="282" cy="292" rx="2.5" ry="1.6" fill="#ffffff" stroke="#be123c" stroke-width="0.9"/>
           <circle cx="268" cy="303" r="1.5" fill="#be123c"/>
         </g>
 
-        <!-- Лимфоидные узелки / фолликулы со светлыми герминативными центрами -->
         <g id="lymphoidFollicles">
-          <!-- Фолликул 1 (верхний латеральный) -->
           <circle cx="248" cy="256" r="8" fill="url(#germinalCenterGrad)" stroke="#3b0764" stroke-width="1.4"/>
           <circle cx="248" cy="256" r="4.2" fill="#fbcfe8" opacity="0.75"/>
-          <!-- Фолликул 2 (центрально-медиальный) -->
           <circle cx="295" cy="268" r="9.5" fill="url(#germinalCenterGrad)" stroke="#3b0764" stroke-width="1.5"/>
           <circle cx="295" cy="268" r="5" fill="#fbcfe8" opacity="0.75"/>
-          <!-- Фолликул 3 (нижний) -->
           <circle cx="262" cy="326" r="7.5" fill="url(#germinalCenterGrad)" stroke="#3b0764" stroke-width="1.3"/>
           <circle cx="262" cy="326" r="3.8" fill="#fbcfe8" opacity="0.7"/>
         </g>
 
-        <!-- Железы, крипты и ацинусы с отчетливыми просветами (Glands & Crypts) -->
         <g id="glandularUnits">
-          <!-- Крупная ветвящаяся железа 1 -->
           <ellipse cx="274" cy="262" rx="6.5" ry="5" fill="url(#lumenGrad)" stroke="#581c87" stroke-width="1.8"/>
           <circle cx="274" cy="262" r="1.5" fill="#7e22ce" opacity="0.45"/>
 
-          <!-- Железа 2 -->
           <ellipse cx="286" cy="280" rx="5.5" ry="4.2" fill="url(#lumenGrad)" stroke="#581c87" stroke-width="1.6"/>
           <circle cx="286" cy="280" r="1.2" fill="#7e22ce" opacity="0.4"/>
 
-          <!-- Железа 3 -->
           <ellipse cx="258" cy="274" rx="5.2" ry="4" fill="url(#lumenGrad)" stroke="#701a75" stroke-width="1.6"/>
           <circle cx="258" cy="274" r="1.1" fill="#a21caf" opacity="0.4"/>
 
-          <!-- Железа 4 (вытянутая крипта) -->
           <path d="M266 295 C268 290 274 290 276 295 C278 302 272 306 268 304 Z"
                 fill="url(#lumenGrad)" stroke="#581c87" stroke-width="1.5"/>
 
-          <!-- Железа 5 -->
           <ellipse cx="280" cy="312" rx="6" ry="4.5" fill="url(#lumenGrad)" stroke="#581c87" stroke-width="1.7"/>
           <circle cx="280" cy="312" r="1.4" fill="#7e22ce" opacity="0.4"/>
 
-          <!-- Железа 6 -->
           <ellipse cx="296" cy="298" rx="5" ry="3.8" fill="url(#lumenGrad)" stroke="#701a75" stroke-width="1.5"/>
 
-          <!-- Железа 7 -->
           <ellipse cx="246" cy="298" rx="4.5" ry="3.5" fill="url(#lumenGrad)" stroke="#701a75" stroke-width="1.5"/>
 
-          <!-- Железа 8 (малая крипта) -->
           <circle cx="260" cy="248" r="3.2" fill="url(#lumenGrad)" stroke="#581c87" stroke-width="1.3"/>
 
-          <!-- Железа 9 -->
           <circle cx="288" cy="250" r="3.4" fill="url(#lumenGrad)" stroke="#581c87" stroke-width="1.4"/>
 
-          <!-- Железа 10 -->
           <circle cx="304" cy="282" r="3.5" fill="url(#lumenGrad)" stroke="#701a75" stroke-width="1.4"/>
 
-          <!-- Железа 11 (нижняя) -->
           <circle cx="278" cy="328" r="3.6" fill="url(#lumenGrad)" stroke="#581c87" stroke-width="1.3"/>
 
-          <!-- Железа 12 -->
           <circle cx="294" cy="320" r="3.2" fill="url(#lumenGrad)" stroke="#701a75" stroke-width="1.3"/>
 
-          <!-- Микро-ацинусы -->
           <circle cx="240" cy="276" r="2.4" fill="#ffffff" stroke="#581c87" stroke-width="1.1"/>
           <circle cx="251" cy="286" r="2.3" fill="#ffffff" stroke="#581c87" stroke-width="1.1"/>
           <circle cx="272" cy="274" r="2.5" fill="#ffffff" stroke="#581c87" stroke-width="1.1"/>
@@ -375,9 +318,7 @@
           <circle cx="254" cy="312" r="2.3" fill="#ffffff" stroke="#581c87" stroke-width="1.1"/>
         </g>
 
-        <!-- Клеточные ядра и микро-гранулярность хроматина (H&E Cellularity) -->
         <g id="cellularNuclei">
-          <!-- Базальные ядра по периметру эпителиальных пластов -->
           <g fill="#2e0854">
             <circle cx="228" cy="258" r="2.2"/>
             <circle cx="225" cy="272" r="2.3"/>
@@ -402,9 +343,7 @@
             <circle cx="244" cy="240" r="2.3"/>
           </g>
 
-          <!-- Перигландулярные кольца ядер вокруг желез -->
           <g fill="#3b0764">
-            <!-- Вокруг железы 1 -->
             <circle cx="267" cy="259" r="1.8"/>
             <circle cx="271" cy="255" r="1.7"/>
             <circle cx="278" cy="255" r="1.8"/>
@@ -412,14 +351,12 @@
             <circle cx="281" cy="266" r="1.8"/>
             <circle cx="275" cy="268" r="1.7"/>
             <circle cx="268" cy="266" r="1.8"/>
-            <!-- Вокруг железы 2 -->
             <circle cx="280" cy="277" r="1.7"/>
             <circle cx="286" cy="274" r="1.8"/>
             <circle cx="292" cy="277" r="1.7"/>
             <circle cx="293" cy="284" r="1.8"/>
             <circle cx="287" cy="286" r="1.7"/>
             <circle cx="281" cy="284" r="1.8"/>
-            <!-- Вокруг железы 5 -->
             <circle cx="273" cy="310" r="1.8"/>
             <circle cx="279" cy="306" r="1.7"/>
             <circle cx="287" cy="309" r="1.8"/>
@@ -428,7 +365,6 @@
             <circle cx="274" cy="316" r="1.7"/>
           </g>
 
-          <!-- Мелкие инфильтрирующие лимфоциты и стромальные фибробласты -->
           <g fill="#1e053a">
             <circle cx="236" cy="266" r="1.5"/>
             <circle cx="242" cy="270" r="1.4"/>
@@ -453,11 +389,8 @@
         </g>
       </g>
 
-      <!-- ====================================================== -->
-      <!-- 2. СЕРИЙНЫЙ СРЕЗ / ВТОРОЙ ФРАГМЕНТ БИОПТАТА (SECONDARY) -->
-      <!-- ====================================================== -->
+
       <g id="secondarySection">
-        <!-- Наружный контур серийного фрагмента -->
         <path d="M242 376
                  C236 384, 235 398, 240 408
                  C245 418, 258 421, 274 420
@@ -469,7 +402,6 @@
               stroke="#9f1239" stroke-width="1.3" stroke-linejoin="round"
               filter="url(#softShadow)"/>
 
-        <!-- Базофильный эпителиальный пласт серийного среза -->
         <path d="M246 381
                  C241 388, 240 398, 244 406
                  C249 414, 260 416, 273 415
@@ -480,7 +412,6 @@
               fill="url(#tissueHematoxylinGrad)"
               opacity="0.92"/>
 
-        <!-- Эозинофильная строма серийного среза -->
         <path d="M252 386
                  C248 392, 247 399, 251 405
                  C256 410, 265 411, 275 410
@@ -491,7 +422,6 @@
               fill="url(#tissueRoseGrad)"
               opacity="0.85"/>
 
-        <!-- Структуры желез в серийном срезе -->
         <ellipse cx="262" cy="392" rx="4.5" ry="3.4" fill="url(#lumenGrad)" stroke="#581c87" stroke-width="1.4"/>
         <circle cx="262" cy="392" r="1.1" fill="#7e22ce" opacity="0.4"/>
 
@@ -502,10 +432,8 @@
         <circle cx="292" cy="386" r="2.4" fill="#ffffff" stroke="#581c87" stroke-width="1.1"/>
         <circle cx="251" cy="398" r="2.2" fill="#ffffff" stroke="#701a75" stroke-width="1.1"/>
 
-        <!-- Септа и сосуд в серийном срезе -->
         <path d="M250 395 Q264 397 278 393 T298 396" fill="none" stroke="#be123c" stroke-width="1.1" stroke-linecap="round" opacity="0.7"/>
 
-        <!-- Клеточные ядра серийного среза -->
         <g fill="#2e0854">
           <circle cx="244" cy="389" r="1.9"/>
           <circle cx="245" cy="401" r="1.8"/>
@@ -518,7 +446,6 @@
           <circle cx="288" cy="376" r="1.9"/>
           <circle cx="274" cy="375" r="1.8"/>
           <circle cx="258" cy="377" r="1.9"/>
-          <!-- Интрагландулярные ядра -->
           <circle cx="257" cy="390" r="1.4" fill="#3b0764"/>
           <circle cx="267" cy="389" r="1.4" fill="#3b0764"/>
           <circle cx="277" cy="392" r="1.4" fill="#3b0764"/>
@@ -530,7 +457,6 @@
     </g>
   </g>
 
-  <!-- Дополнительный мягкий блик сверху -->
   <ellipse cx="200" cy="180" rx="70" ry="28"
            fill="#ffffff" opacity="0.12"
            transform="rotate(-18 200 180)"/>

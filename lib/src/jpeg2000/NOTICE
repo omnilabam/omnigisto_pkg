@@ -1,0 +1,10 @@
+This directory contains a modified copy of the jpeg2000 Dart package
+version 0.1.4 (https://github.com/p3pp8/jpeg2000), licensed under the
+Apache License, Version 2.0. See LICENSE in this directory.
+
+Modifications:
+- Component samples are upsampled onto the JPEG 2000 reference grid using
+  XRsiz and YRsiz. Each component sample is co-sited with reference pixel
+  (cx * XRsiz, cy * YRsiz) and missing samples are bilinearly interpolated.
+- JpxImage.parse accepts convertYbrFull422. When set, assembled YCbCr
+  samples are converted to RGB with the DICOM YBR_FULL inverse matrix.

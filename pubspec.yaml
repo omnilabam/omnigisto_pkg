@@ -1,6 +1,6 @@
 name: omnigisto_pkg
-description: "A lightweight Flutter/Dart library for reading Aperio SVS, Hamamatsu NDPI/VMS/VMU and Dicom metadata, extracting tiles and associated images."
-version: 0.1.6
+description: "A lightweight Flutter/Dart library for reading Aperio SVS, Hamamatsu NDPI/VMS/VMU and Dicom metadata, extracting tiles and associated images, DICOM WSI support."
+version: 0.1.7
 homepage: https://github.com/omnilabam/omnigisto_pkg
 repository: https://github.com/omnilabam/omnigisto_pkg
 issue_tracker: https://github.com/omnilabam/omnigisto_pkg/issues
@@ -17,7 +17,6 @@ environment:
 
 dependencies:
   image: ^4.10.1
-  jpeg2000: ^0.1.4
 dev_dependencies:
   test: ^1.32.0
 

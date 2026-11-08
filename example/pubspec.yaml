@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 1.0.0+1
+version: 1.2.0+2
 
 environment:
   sdk: ^3.11.5
@@ -54,6 +54,7 @@ dev_dependencies:
 # following page: https://dart.dev/tools/pub/pubspec
 
 # The following section is specific to Flutter packages.
+# ATTENTION THIS FILE IS NOT IN GIT!!! PUT YOUR OUN SVS/NDPI before RUN
 flutter:
   assets:
     - assets/1.2.276.0.7230010.3.1.4.826242871.3100.1534335055.4381.svs

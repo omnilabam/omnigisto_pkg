@@ -68,15 +68,16 @@
 * Wide MCU strips used by virtual tiles and region crops are decoded once and cached; neighbouring horizontal tiles are cropped from that band instead of decoding the full strip again.
 * JPEG payloads larger than 512 KiB are decoded in an isolate so tile and region decoding does not block the event loop.
 
+## 0.1.7
+* Fixed JPEG 2000 decoding of subsampled components (`XRsiz` / `YRsiz`), including DICOM `YBR_FULL_422` tiles that previously failed while assembling chroma.
+* Added YCbCr to RGB conversion when `PhotometricInterpretation` is `YBR_FULL_422`.
 * Added support for reading single instances of DICOM Whole Slide Imaging (WSI).
 * Implemented `DicomFile` with `RandomAccessFile` pooling for efficient parallel reading without loading the entire file into memory.
 * Added `openDicomFile` for fast DICOM parsing and scanning Basic Offset Table for O(1) frame access.
 * Added `DicomMetadata` and `readDicomMetadata` to extract key tags (UIDs, Total Pixel Matrix sizes, Transfer Syntax) and classify instance types (`VOLUME`, `LABEL`, `OVERVIEW`, `THUMBNAIL`).
 * Added `extractDicomFrame` for extracting raw frame bytes from encapsulated and uncompressed DICOM pixel data.
 * Added `extractDicomFrameAsImage` for decoding JPEG-compressed and uncompressed 8-bit DICOM frames.
-ß
-> [!NOTE]
->The DICOM standard assumes that different layers, associated images, and annotations are located in different DICOM files that nevertheless belong to the same study. 
->At the same time, this package was conceived as a lightweight package, and full DICOM implementation would require abandoning this idea. Thus, the package can read DICOM files of layers and associated images; for annotations, we created a separate package omni_wsi_annotations. 
->
->For full-fledged work with DICOM, you will need to create a wrapper over these two packages or wait for us to release our own.
+* Faster DICOM open: tags are parsed from large reads, known-length sequences such as per-frame functional groups are skipped, and offset tables are stored in typed lists.
+* Frame lookup without a usable offset table is indexed once, then each frame is a single range read. File handles are no longer shared between concurrent reads.
+* Encapsulated frames are decoded by transfer syntax in a small isolate pool, and DICOM region reads fetch tiles in parallel.
+* DICOM WSI (only WSI) C-FIND, C-ECHO, C-GET/C-MOVE support

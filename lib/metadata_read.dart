@@ -7,12 +7,14 @@ import 'dart:io';
 import 'dart:math' as math;
 import 'dart:typed_data';
 import 'package:image/image.dart' as img;
-import 'package:jpeg2000/jpeg2000.dart';
+import 'package:omnigisto_pkg/src/jpeg2000/jpeg2000.dart';
 import 'package:omnigisto_pkg/types/types.dart';
 
 import 'src/hamamatsu/ndpi.dart';
 import 'src/hamamatsu/slide.dart';
 import 'src/hamamatsu/vms.dart';
+import 'src/dicom/dicom_slide.dart';
+export 'src/dicom/dicom_slide.dart';
 
 /// Opens an SVS, Hamamatsu NDPI, VMS or VMU file at the specified [path].
 ///
@@ -32,7 +34,15 @@ Future<SvsFile?> openSvsFile(
   int? virtualTileWidth,
   int? virtualTileHeight,
   int? mcuRowsPerTile,
+  String? seriesInstanceUid,
 }) async {
+  if (await FileSystemEntity.isDirectory(path)) {
+    return await openDicomFolder(
+      path,
+      maxConcurrency: maxConcurrency,
+      seriesInstanceUid: seriesInstanceUid,
+    );
+  }
   final file = File(path);
   if (!await file.exists()) return null;
 
@@ -123,6 +133,14 @@ Future<SvsFile?> openSvsFile(
 /// [type] is the image type identifier to extract ('thumbnail', 'label', or 'macro').
 /// Returns the raw byte data, or `null` if the requested image type was not found.
 Future<Uint8List?> extractSvsImage(SvsFile svs, String type) async {
+  if (svs is DicomSlideFile) {
+    svs.ensureOpen();
+    try {
+      return await svs.associations[type]?.readImage();
+    } catch (_) {
+      return null;
+    }
+  }
   if (svs is HamamatsuFile) {
     svs.ensureOpen();
     try {
@@ -215,6 +233,14 @@ Future<img.Image?> extractSvsImageAsImage(
   bool applyDisplayColor = true,
   int? displayColor,
 }) async {
+  if (svs is DicomSlideFile) {
+    svs.ensureOpen();
+    try {
+      return await svs.associations[type]?.readImageDecoded(applyColorScheme: applyColorScheme);
+    } catch (_) {
+      return null;
+    }
+  }
   if (svs is HamamatsuFile) {
     svs.ensureOpen();
     try {
@@ -873,6 +899,16 @@ Future<Uint8List?> extractSvsTile(
     return null;
   }
 
+  if (svs is DicomSlideFile) {
+    final level = svs.levelAt(layerIndex, tileX, tileY);
+    try {
+      final bytes = await level?.readTile(tileX, tileY, cancelToken: cancelToken);
+      return cancelToken?.isCancelled == true ? null : bytes;
+    } catch (_) {
+      return null;
+    }
+  }
+
   if (svs is HamamatsuFile) {
     final level = svs.levelAt(layerIndex, tileX, tileY);
     try {
@@ -952,6 +988,21 @@ Future<img.Image?> extractSvsTileAsImage(
 }) async {
   if (cancelToken?.isCancelled == true) {
     return null;
+  }
+
+  if (svs is DicomSlideFile) {
+    final level = svs.levelAt(layerIndex, tileX, tileY);
+    try {
+      final image = await level?.readTileImage(tileX, tileY,
+        applyColorScheme: applyColorScheme,
+        applyDisplayColor: applyDisplayColor,
+        displayColor: displayColor,
+        cancelToken: cancelToken,
+      );
+      return cancelToken?.isCancelled == true ? null : image;
+    } catch (_) {
+      return null;
+    }
   }
 
   if (svs is HamamatsuFile) {
@@ -1069,6 +1120,16 @@ Future<Uint8List?> extractSvsLevelImage(
   CancellationToken? cancelToken,
 }) async {
   if (cancelToken?.isCancelled == true) return null;
+  if (svs is DicomSlideFile) {
+    svs.ensureOpen();
+    if (layerIndex < 0 || layerIndex >= svs.levels.length) return null;
+    try {
+      final bytes = await svs.levels[layerIndex].readImage(cancelToken: cancelToken);
+      return cancelToken?.isCancelled == true ? null : bytes;
+    } catch (_) {
+      return null;
+    }
+  }
   if (svs is HamamatsuFile) {
     svs.ensureOpen();
     if (layerIndex < 0 || layerIndex >= svs.levels.length) return null;
@@ -1134,6 +1195,28 @@ Future<img.Image?> readRegion(
 }) async {
   if (width <= 0 || height <= 0 || cancelToken?.isCancelled == true) {
     return null;
+  }
+
+  if (svs is DicomSlideFile) {
+    svs.ensureOpen();
+    if (layerIndex < 0 || layerIndex >= svs.levels.length) return null;
+    try {
+      final image = await svs.levels[layerIndex].readRegion(
+        x,
+        y,
+        width,
+        height,
+        applyColorScheme: applyColorScheme,
+        cancelToken: cancelToken,
+      );
+      if (cancelToken?.isCancelled == true) return null;
+      if (image != null && applyDisplayColor && displayColor != null && displayColor != 0) {
+        return _applyDisplayColorToImage(image, displayColor);
+      }
+      return image;
+    } catch (_) {
+      return null;
+    }
   }
 
   if (svs is HamamatsuFile) {
@@ -1761,6 +1844,7 @@ Future<List<int>> _readTiffArray(
 /// [svs] is the open [SvsFile].
 /// Returns an [SvsFullMetadata] instance containing the levels and associated images, or `null` on failure.
 Future<SvsFullMetadata?> readFullSvsMetadata(SvsFile svs) async {
+  if (svs is DicomSlideFile) return svs.fullMetadata();
   if (svs is HamamatsuFile) return svs.fullMetadata();
   return await svs.synchronized(() async {
     final raf = svs.raf;
@@ -1936,6 +2020,7 @@ Future<SvsFullMetadata?> readFullSvsMetadata(SvsFile svs) async {
 /// [svs] is the open [SvsFile].
 /// Returns an [SvsMetadata] instance, or `null` on failure.
 Future<SvsMetadata?> readSvsMetadata(SvsFile svs) async {
+  if (svs is DicomSlideFile) return svs.metadata();
   if (svs is HamamatsuFile) return svs.metadata();
   return await svs.synchronized(() async {
     final raf = svs.raf;

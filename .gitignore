@@ -31,6 +31,8 @@ migrate_working_dir/
 /coverage/
 /test/*
 !/test/hamamatsu_*_test.dart
+!/test/dicom_test.dart
 !/test/helpers/
 /test/helpers/*
 !/test/helpers/hamamatsu_jpeg_fixture.dart
+/example/test/
